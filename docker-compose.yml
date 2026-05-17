@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  # 🍃 MongoDB - Event Store
+  mongodb:
+    image: mongo:latest
+    container_name: techbank-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=bankAccount
+    volumes:
+      - mongodb_data:/data/db
+
+  # 🐬 MySQL - Read Database
+  mysql:
+    image: mysql:8.0
+    container_name: techbank-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=admin
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 🐵 Zookeeper - Kafka Coordinator
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: techbank-zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  # 🚀 Apache Kafka - Event Bus Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: techbank-kafka
+    restart: always
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+
+  # 🔴 Redis - Cache
+  redis:
+    image: redis:alpine
+    container_name: techbank-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # 🔍 Elasticsearch - Search Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: techbank-elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
+
+volumes:
+  mongodb_data:
+    driver: local
+  mysql_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
